@@ -1,45 +1,45 @@
 const PORT = process.env.PORT || 3334;
 const express = require('express');
+const fs = require('fs-extra');
 const app = express();
 const TelegramBot = require('node-telegram-bot-api');
-const token = '667589363:AAFZOOLBAqyWeFVjInlzU1X7_ySmrV7Iu8w';
+
+const token = process.env.TELEGRAM_BOT_TOKEN;
+const adminChatId = process.env.TELEGRAM_ADMIN_CHAT_ID;
+if (!token || !adminChatId) throw new Error('Set TELEGRAM_BOT_TOKEN and TELEGRAM_ADMIN_CHAT_ID');
 const bot = new TelegramBot(token, {polling: true});
+var rp = require('request-promise');
+
 app.listen(PORT, ()=>{
     console.log('Телеграм запущен порт:', PORT)
  })
+ bot.sendMessage(process.env.LEGACY_ADMIN_CHAT_ID, "Телеграм бот - запущен");
 
-app.get('/',async (req,res)=>{
-    if (req.query.msg!=undefined) {
-        let number = 304622290;
-        if (req.query.num!=undefined) {
-            number = req.query.num;
-        }
-        res.send('SENDING')
-        bot.sendMessage(`${number}`, req.query.msg);
+ app.get('/',async (req,res)=>{
+    if (req.query.msg!=undefined && req.query.num!=undefined) {
+        res.send('SEND')
+        let number = req.query.num;
+        let message = req.query.msg;
+        bot.sendMessage(`${number}`, message);
+        console.log(number);
+        console.log(message);
+
     } else{
-        res.send('NO: ' +req.query)
+        res.send('NO' +req.query)
     }
 })
-//kode
-app.post('/',async (req,res)=>{
-    //console.log(req.body);
-    console.log(req.headers);
-    let number = 304622290;
-   // bot.sendMessage(`${number}`, req.body);
-    for (key in req.headers) {
-        bot.sendMessage(`${number}`, `${key}:${req.headers[key]}`);
-    }
-    
-    
+app.get('/err',async (req,res)=>{
+  if (req.query.msg!=undefined && req.query.num!=undefined) {
+      res.send('SEND')
+      let number = req.query.num;
+      let message = req.query.msg;
+      let pic = req.query.pic;
+      bot.sendMessage(`${number}`, message,pic);
+  } else{
+      res.send('NO' +req.query)
+  }
 })
 
-
-bot.sendMessage(304622290, "Телеграм бот - запущен");
-
-http://localhost:3334?msg=hi&num=304622290
-
-
-// Matches "/echo [whatever]"
 bot.onText(/\/echo (.+)/, (msg, match) => {
   // 'msg' is the received Message from Telegram
   // 'match' is the result of executing the regexp above on the text content
@@ -52,17 +52,17 @@ bot.onText(/\/echo (.+)/, (msg, match) => {
   bot.sendMessage(chatId, resp);
 });
 
-// Listen for any kind of message. There are different kinds of
-// messages.
 bot.on('message', (msg) => {
   const chatId = msg.chat.id;
    console.dir(msg);
-   bot.sendMessage(304622290, `${msg.chat.id} написал сообщение\n ${msg.text}`);
+   if (msg.chat.id!=adminChatId){
+    bot.sendMessage(process.env.LEGACY_ADMIN_CHAT_ID, `${msg.chat.id} написал сообщение\n ${msg.text}`);
+   }
+
   // send a message to the chat acknowledging receipt of their message
   bot.sendMessage(chatId, 'Функция живых ответов - в разработке!');
 });
 
- // sendDice()
 process.on('uncaughtException', (err) => {
   console.log('Глобальный косяк приложения!!! ', err.stack);
 }); //Если все пошло по пизде, спасет ситуацию
